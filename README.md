@@ -17,6 +17,7 @@ Bộ tài liệu yêu cầu (Business + Software Requirements) cho hệ thống 
 | 07 | [Data Model](docs/07-data-model.md) | Thực thể dữ liệu chính, trường dữ liệu trích xuất, trạng thái chứng từ |
 | 08 | [User Stories & Acceptance Criteria](docs/08-user-stories.md) | User stories theo persona với acceptance criteria (Gherkin) |
 | 09 | [Roadmap, Risks & Open Questions](docs/09-roadmap-risks.md) | Phân pha release (MVP → Scale), rủi ro, giả định, câu hỏi mở cần làm rõ với khách hàng |
+| 10 | [Solution Architecture & Tech Stack](docs/10-solution-architecture.md) | Kiến trúc tổng thể, pipeline xử lý, workflow engine (bpmn-js), AI/LLM strategy, tech stack, deployment, ADR, PoC plan |
 
 ## Tóm tắt giải pháp (Executive Summary)
 
