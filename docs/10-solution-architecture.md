@@ -98,7 +98,7 @@ flowchart TB
 
 ### 2.1 Nguyên tắc kiến trúc
 
-1. **Modular monolith cho core ở MVP, tách service khi cần** 🟡 — các module NestJS (document, validation, matching, workflow, vendor, integration…) tách ranh giới rõ (bounded context, schema DB riêng, giao tiếp qua interface/event) trong **một deployable**; AI workers (Python) và Integration Hub là deployable riêng vì cần scale độc lập. Giảm chi phí vận hành giai đoạn đầu, vẫn tách được thành microservices sau.
+1. **Modular monolith cho core ở MVP, tách service khi cần** ✅ — các module NestJS (document, validation, matching, workflow, vendor, integration…) tách ranh giới rõ (bounded context, schema DB riêng, giao tiếp qua interface/event) trong **một deployable**; AI workers (Python) và Integration Hub là deployable riêng vì cần scale độc lập. Giảm chi phí vận hành giai đoạn đầu, vẫn tách được thành microservices sau.
 2. **Durable orchestration**: mọi xử lý nhiều bước (pipeline chứng từ, approval, retry tích hợp ERP) chạy trên **Temporal** → không mất trạng thái khi pod restart, retry/timeout khai báo.
 3. **Event-driven ra ngoài**: thay đổi nghiệp vụ phát event qua **transactional outbox** → Kafka → webhooks, notification, audit, analytics.
 4. **Structured-first AI**: HĐĐT XML và dữ liệu ERP đi thẳng, không qua LLM; OCR/LLM chỉ cho chứng từ không có cấu trúc.
@@ -156,7 +156,7 @@ sequenceDiagram
 | Decision tables | **dmn-js** 🟡 | Approval matrix, tolerance, routing rules dạng bảng quyết định |
 | Task forms | **form-js** 🟡 | Form cho human task (cấu hình field hiển thị/bắt buộc) |
 | Expression language | **FEEL** (thư viện `feelin`) 🟡 | Điều kiện trên gateway / decision table, cùng chuẩn với DMN |
-| Execution runtime | 🟡 **Phương án A (đề xuất): BPMN interpreter trên Temporal (TypeScript SDK)** | Workflow Service đọc BPMN XML đã publish, thực thi một **tập con BPMN** được hỗ trợ bằng Temporal workflow generic |
+| Execution runtime | ✅ **Phương án A: BPMN interpreter trên Temporal (TypeScript SDK)** | Workflow Service đọc BPMN XML đã publish, thực thi một **tập con BPMN** được hỗ trợ bằng Temporal workflow generic |
 
 ### 4.1 So sánh phương án execution runtime
 
@@ -170,7 +170,7 @@ sequenceDiagram
 | License | MIT (Temporal), bpmn.io license | MIT | Flowable: Apache 2.0; Camunda 8 self-managed production cần license thương mại — cần kiểm tra |
 | Rủi ro chính | Phải kiểm soát chặt tập element hỗ trợ | Độ trưởng thành, scale | Thêm công nghệ, dữ liệu quy trình nằm ngoài core |
 
-**Khuyến nghị: Phương án A.** Temporal đã cần cho pipeline xử lý chứng từ, nên dùng chung một engine cho cả approval workflow → một stack, một cách vận hành, một cơ chế retry/timer. Phương án C (Flowable) giữ làm dự phòng nếu khách hàng yêu cầu độ phủ BPMN đầy đủ.
+**Đã chốt: Phương án A.** Temporal đã cần cho pipeline xử lý chứng từ, nên dùng chung một engine cho cả approval workflow → một stack, một cách vận hành, một cơ chế retry/timer. Phương án C (Flowable) giữ làm dự phòng nếu khách hàng yêu cầu độ phủ BPMN đầy đủ.
 
 ### 4.2 Tập con BPMN hỗ trợ (MVP)
 
@@ -246,8 +246,8 @@ Chưa gồm chi phí OCR cloud (thường tính theo trang) và giá qua Bedrock
 | Validation / API contract | Zod / class-validator, OpenAPI 3.1 (sinh từ NestJS), gRPC hoặc REST nội bộ với AI services | MIT | 🟡 |
 | Authorization | Keycloak (authN) + Cerbos hoặc OpenFGA (ABAC/ReBAC cho data-level permission) | Apache 2.0 | 🟡 |
 | **AI services** | Python 3.12, FastAPI, Temporal Python SDK, Pydantic | MIT | ✅ |
-| **Orchestration** | Temporal (self-hosted trên K8s, hoặc Temporal Cloud) | MIT | 🟡 |
-| **Event bus** | Apache Kafka (Strimzi operator) + transactional outbox; Debezium CDC cho analytics | Apache 2.0 | 🟡 |
+| **Orchestration** | Temporal (self-hosted trên K8s, hoặc Temporal Cloud) | MIT | ✅ |
+| **Event bus** | Apache Kafka (Strimzi operator hoặc managed Kafka của cloud) + transactional outbox; Debezium CDC cho analytics | Apache 2.0 | ✅ |
 | **Database** | PostgreSQL 16+ (CloudNativePG operator), `pgvector`, Row-Level Security | PostgreSQL | 🟡 |
 | Cache / lock / rate limit | Redis 7 hoặc Valkey | BSD | 🟡 |
 | Search | OpenSearch (ICU tokenizer + asciifolding cho tiếng Việt có/không dấu) | Apache 2.0 | 🟡 |
@@ -270,7 +270,7 @@ Chưa gồm chi phí OCR cloud (thường tính theo trang) và giá qua Bedrock
 
 | Hạng mục | Thiết kế |
 |---------|---------|
-| Multi-tenancy | **Shared DB + `tenant_id` + PostgreSQL RLS** (mặc định SaaS); **schema/DB riêng** hoặc **cluster riêng** cho gói Enterprise/on-prem — cùng codebase, chọn qua cấu hình. |
+| Multi-tenancy | ✅ **Shared DB + `tenant_id` + PostgreSQL RLS** (SaaS — mô hình go-live đầu tiên); **schema/DB riêng** hoặc **cluster riêng** cho gói Enterprise/on-prem — cùng codebase, chọn qua cấu hình. |
 | Phân vùng dữ liệu | Partition bảng lớn (documents, extracted_fields, audit_events) theo tháng; archive partition cũ sang cold storage. |
 | Encryption | TLS nội bộ (mTLS qua service mesh — tùy chọn); at-rest bởi storage/DB; **envelope encryption theo tenant** cho file chứng từ (data key per tenant, bọc bởi KMS/OpenBao) → hỗ trợ BYOK. |
 | File lifecycle | `raw/` (immutable, Object Lock theo retention) → `rendition/` (PDF/A searchable) → `derived/` (ảnh trang, thumbnail); hot → warm → cold theo tuổi. |
@@ -314,7 +314,7 @@ flowchart LR
 
 | Topology | Khi nào dùng | Ghi chú |
 |---------|--------------|---------|
-| SaaS multi-tenant | Doanh nghiệp vừa, triển khai nhanh | Chi phí thấp nhất; region VN (cloud trong nước) hoặc SG |
+| SaaS multi-tenant ✅ (go-live đầu tiên) | Doanh nghiệp vừa, triển khai nhanh | Chi phí thấp nhất; region VN (cloud trong nước) hoặc SG — cần chốt |
 | Dedicated cloud | Doanh nghiệp lớn, yêu cầu tách biệt | Cùng Helm charts; khách hàng giữ key |
 | On-prem / air-gapped | Ngân hàng, doanh nghiệp nhà nước | Cần GPU; accuracy phụ thuộc model self-hosted — đo riêng ở PoC |
 
@@ -360,16 +360,17 @@ flowchart LR
 | ADR-02 | Hybrid AI: OCR/LLM cloud qua adapter, hỗ trợ self-hosted | ✅ Accepted |
 | ADR-03 | Backend NestJS (TypeScript) + AI services Python | ✅ Accepted |
 | ADR-04 | Process designer dùng bpmn-js | ✅ Accepted |
-| ADR-05 | Workflow runtime: BPMN subset interpreter trên Temporal (phương án A) | 🟡 Proposed |
+| ADR-05 | Workflow runtime: BPMN subset interpreter trên Temporal (phương án A) | ✅ Accepted |
 | ADR-06 | dmn-js + FEEL cho decision tables; form-js cho task forms | 🟡 Proposed |
-| ADR-07 | Modular monolith cho core ở MVP; AI workers & Integration Hub deploy riêng | 🟡 Proposed |
-| ADR-08 | Kafka làm event bus + transactional outbox | 🟡 Proposed |
+| ADR-07 | Modular monolith cho core ở MVP; AI workers & Integration Hub deploy riêng | ✅ Accepted |
+| ADR-08 | Kafka làm event bus + transactional outbox | ✅ Accepted |
 | ADR-09 | PostgreSQL + RLS cho multi-tenancy, pgvector cho embeddings | 🟡 Proposed |
 | ADR-10 | Keycloak cho identity; Cerbos/OpenFGA cho authorization | 🟡 Proposed |
 | ADR-11 | Claude Opus 5 là LLM mặc định; routing sang model rẻ hơn chỉ khi PoC chứng minh | 🟡 Proposed |
 | ADR-12 | OpenSearch cho full-text search tiếng Việt | 🟡 Proposed |
 | ADR-13 | Frontend React + Ant Design; mobile dạng PWA ở MVP | 🟡 Proposed |
 | ADR-14 | Tránh component AGPL trong sản phẩm phân phối (PyMuPDF, MinIO) trừ khi có license thương mại | 🟡 Proposed |
+| ADR-15 | Go-live đầu tiên theo mô hình SaaS multi-tenant (shared cluster + PostgreSQL RLS); dedicated/on-prem ở các phase sau | ✅ Accepted |
 
 ## 13. PoC Plan để đánh giá kiến trúc (Phase 0)
 
@@ -384,10 +385,12 @@ flowchart LR
 
 ## 14. Câu hỏi cần xác nhận tiếp
 
-1. ADR-05: đồng ý **Temporal + BPMN subset** hay muốn engine BPMN đầy đủ (Flowable)?
-2. ADR-07: đồng ý **modular monolith** cho MVP hay yêu cầu microservices ngay từ đầu?
-3. ADR-08: Kafka hay giải pháp nhẹ hơn (NATS JetStream / RabbitMQ) cho quy mô MVP?
-4. Topology triển khai đầu tiên: SaaS, dedicated hay on-prem? Region?
-5. Khách hàng có sẵn hợp đồng AWS/GCP (để dùng Claude qua Bedrock/Vertex) hay dùng Anthropic API trực tiếp?
-6. Watermark bpmn.io trên designer có chấp nhận được không?
-7. UI library: Ant Design hay design system riêng của khách hàng/Savvycom?
+Đã chốt (2026-09-26): ADR-01…05, ADR-07, ADR-08, ADR-15.
+
+1. **Region SaaS**: đặt tại Việt Nam (cloud trong nước chạy K8s — Viettel/FPT/VNG/CMC) hay Singapore (hyperscaler)? Ảnh hưởng data residency và kênh truy cập LLM.
+2. **Kênh LLM cho SaaS**: Anthropic API trực tiếp hay qua Bedrock/Vertex (theo hợp đồng cloud nếu có)?
+3. **Kafka**: tự vận hành bằng Strimzi hay dùng managed Kafka của cloud được chọn?
+4. **Temporal**: self-hosted trên K8s hay Temporal Cloud?
+5. Watermark bpmn.io trên designer có chấp nhận được không?
+6. UI library: Ant Design hay design system riêng?
+7. Authorization engine: Cerbos hay OpenFGA (ADR-10)?
